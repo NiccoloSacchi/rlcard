@@ -31,7 +31,7 @@ class LimitholdemRound(object):
         # Raised amount for each player
         self.raised = [0 for _ in range(self.num_players)]
 
-    def start_new_round (self, game_pointer, raised=None):
+    def start_new_round(self, game_pointer, raised=None):
         ''' Start a new bidding round
 
         Args:
@@ -89,7 +89,7 @@ class LimitholdemRound(object):
         return self.game_pointer
 
     def get_legal_actions(self):
-        ''' Obtain the legal actions for the curent player
+        ''' Obtain the legal actions for the current player
 
         Returns:
            (list):  A list of legal actions

@@ -76,7 +76,7 @@ class Env(object):
         done = False
         self.timestep += 1
         state, player_id = self.game.step(self.decode_action(action))
-        while not self.game.is_over() and not player_id == self.active_player:
+        while not self.game.is_over() and player_id != self.active_player:
             self.timestep += 1
             if self.model.use_raw:
                 action = self.model.agents[player_id].eval_step(state)
