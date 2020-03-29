@@ -41,5 +41,5 @@ class TheGameDealer(object):
         self.seed = seed
     
     def __str__(self):
-        return ', '.join([str(c) for c in self.deck])
+        return 'Deck: {}'.format(sorted([c.rank for c in self.deck]))
             

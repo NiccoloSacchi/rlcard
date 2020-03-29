@@ -79,8 +79,11 @@ class TheGamePlayer(object):
     def state_to_str(self, state):
         ''' Converts the state to a string. '''
         state_str = ''
-        state_str += '\n\tPublic Cards: {}'.format([c.get_index() for c in state['public_cards']])
-        state_str += '\n\tPlayer Hand: {}'.format([c.get_index() for c in state['hand']])
-        state_str += '\n\t#Cards Played: {}'.format(state['num_cards_played'])
+        state_str += '\n\tPublic Cards: {}'.format([c.get_index() for c in state.public_cards])
+        state_str += '\n\tPlayer Hand: {}'.format([c.get_index() for c in self.hand])
+        state_str += '\n\t#Cards Played: {}'.format(state.num_cards_played)
         return state_str
-        
+    
+    def __str__(self):
+        ''' Convert to string the id and the hand of the player. '''
+        return '{} hand: {}'.format(self.player_id, [c.rank for c in self.hand])        
