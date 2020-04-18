@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+from rlcard.utils.utils import remove_illegal
+
 
 class PolicyNetwork(torch.nn.Module):
     def __init__(self,
@@ -40,13 +42,27 @@ class Policy:
         policy_network = PolicyNetwork(np.prod(state_shape), action_num)
         self.policy_network = policy_network.to(self.device)
 
-    def select_action(self, state):
-        state = torch.from_numpy(state).float()  # To check that the shape is correct
+    def predict(self, observed_state):
+        state = torch.from_numpy(observed_state).float()  # To check that the shape is correct
         probs = self.policy_network(state)
+        return probs
+
+    def step(self, state):
+        probs = self.predict(state["obs"])
+        # TODO: check removing the actions like this is fine for the computation of the gradient
+        probs = remove_illegal(probs, state["legal_actions"])
         m = Categorical(probs)
         action = m.sample()
         self.log_probs.append(m.log_prob(action))
         return action.item()
+
+    def eval_step(self, state):
+        with torch.no_grad():
+            probs = self.predict(state["obs"])
+            probs = remove_illegal(probs, state["legal_actions"])
+            # TODO: check that a greedy policy is obtained correctly with this step
+            best_action = np.argmax(probs)
+        return best_action
 
     def terminate_episode(self):
         G = 0
