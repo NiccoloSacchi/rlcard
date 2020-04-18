@@ -1,4 +1,5 @@
 import torch
+from torch.distributions import Categorical
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
@@ -18,8 +19,29 @@ class PolicyNetwork(torch.nn.Module):
         return out
 
 class Policy:
-    def __init__(self, action_num, state_shape):
-        self.policy_network = PolicyNetwork(np.prod(state_shape), action_num)
+    def __init__(self, action_num, state_shape, learning_rate, device):
+        self.learning_rate = learning_rate
+        self.device = device
+        self._init_policy_network(action_num, state_shape)
+        self.optimizer = torch.optim.Adam(self.policy_network.parameters)
+        self.log_probs = []
+        self.rewards = []
+
+    def _init_policy_network(self, action_num, state_shape):
+        policy_network = PolicyNetwork(np.prod(state_shape), action_num)
+        self.policy_network = policy_network.to(self.device)
+
+    def select_action(self, state):
+        state = torch.from_numpy(state).float()  # To check that the shape is correct
+        probs = self.policy_network(state)
+        m = Categorical(probs)
+        action = m.sample()
+        self.log_probs.append(m.log_prob(action))
+        return action.item()
+
+    def terminate_episode(self):
+        G = 0
+
 
 class ReinforceAgent:
     def __init__(self,
