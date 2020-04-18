@@ -18,9 +18,18 @@ class PolicyNetwork(torch.nn.Module):
         out = F.softmax(self.linear2(out))
         return out
 
+
 class Policy:
-    def __init__(self, action_num, state_shape, learning_rate, device):
+    eps = np.finfo(np.float32).eps.item()
+
+    def __init__(self,
+                 action_num,
+                 state_shape,
+                 learning_rate,
+                 discount_factor,
+                 device):
         self.learning_rate = learning_rate
+        self.discount_factor = discount_factor
         self.device = device
         self._init_policy_network(action_num, state_shape)
         self.optimizer = torch.optim.Adam(self.policy_network.parameters)
@@ -41,6 +50,25 @@ class Policy:
 
     def terminate_episode(self):
         G = 0
+        returns = []
+        for r in self.rewards[::-1]:
+            G = r + self.discount_factor * G
+            returns.insert(0, G)
+        returns = torch.tensor(returns)
+
+        # TODO: check why it is better to normalize the returns
+        returns = (returns - returns.mean()) / (returns.std() + self.eps)
+
+        # TODO: check that this operation is correctly done element-wise
+        # TODO: verify that the data are in the correct device - still not clear to me
+        policy_loss = - (torch.tensor(self.log_probs) * returns).sum()
+
+        self.optimizer.zero_grad()
+        policy_loss.backward()
+        self.optimizer.step()
+
+        self.rewards = []
+        self.log_probs = []
 
 
 class ReinforceAgent:
