@@ -43,26 +43,9 @@ class Policy:
         self.policy_network = policy_network.to(self.device)
 
     def predict(self, observed_state):
-        state = torch.from_numpy(observed_state).float()  # To check that the shape is correct
+        state = torch.from_numpy(observed_state).float().to(self.device)  # To check that the shape is correct
         probs = self.policy_network(state)
         return probs
-
-    def step(self, state):
-        probs = self.predict(state["obs"])
-        # TODO: check removing the actions like this is fine for the computation of the gradient
-        probs = remove_illegal(probs, state["legal_actions"])
-        m = Categorical(probs)
-        action = m.sample()
-        self.log_probs.append(m.log_prob(action))
-        return action.item()
-
-    def eval_step(self, state):
-        with torch.no_grad():
-            probs = self.predict(state["obs"])
-            probs = remove_illegal(probs, state["legal_actions"])
-            # TODO: check that a greedy policy is obtained correctly with this step
-            best_action = np.argmax(probs)
-        return best_action
 
     def terminate_episode(self):
         G = 0
@@ -77,7 +60,7 @@ class Policy:
 
         # TODO: check that this operation is correctly done element-wise
         # TODO: verify that the data are in the correct device - still not clear to me
-        policy_loss = - (torch.tensor(self.log_probs) * returns).sum()
+        policy_loss = - (torch.cat(self.log_probs) * returns).sum()
 
         self.optimizer.zero_grad()
         policy_loss.backward()
@@ -85,6 +68,9 @@ class Policy:
 
         self.rewards = []
         self.log_probs = []
+
+        # TODO: verify this loss is the real training loss
+        return policy_loss
 
 
 class ReinforceAgent:
@@ -103,6 +89,8 @@ class ReinforceAgent:
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self._init_device(device)
+        self.policy = Policy(action_num=action_num, state_shape=state_shape, learning_rate=learning_rate,
+                             discount_factor=discount_factor, device=device)
 
     def _init_device(self, device):
         if device is None:
@@ -110,3 +98,26 @@ class ReinforceAgent:
         else:
             self.device = device
 
+    def feed(self, ts):
+        (_, _, reward, _, _) = tuple(ts)
+        self.policy.rewards = reward
+
+    def step(self, state):
+        probs = self.policy.predict(state["obs"])
+        # TODO: check removing the actions like this is fine for the computation of the gradient
+        probs = remove_illegal(probs, state["legal_actions"])
+        m = Categorical(probs)
+        action = m.sample()
+        self.policy.log_probs.append(m.log_prob(action))
+        return action.item()
+
+    def eval_step(self, state):
+        with torch.no_grad():
+            probs = self.policy.predict(state["obs"])
+            probs = remove_illegal(probs, state["legal_actions"])
+            # TODO: could be also good to keep the policy stochastic also at evaluation
+            best_action = np.argmax(probs)
+        return best_action
+
+    def train(self):
+        return self.policy.terminate_episode()
