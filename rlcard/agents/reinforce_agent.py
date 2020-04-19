@@ -57,8 +57,8 @@ class Policy:
             returns.insert(0, G)
         returns = torch.tensor(returns)
 
-        # TODO: check why it is better to normalize the returns
-        returns = (returns - returns.mean()) / (returns.std() + self.eps)
+        if returns.std() > self.eps:
+            returns = (returns - returns.mean()) / (returns.std())
 
         # TODO: check that this operation is correctly done element-wise
         # TODO: verify that the data are in the correct device - still not clear to me
@@ -97,8 +97,8 @@ class ReinforceAgent:
             self.device = device
 
     def feed(self, ts):
-        (_, _, reward, _, _) = tuple(ts)
-        self.policy.rewards = reward
+        (_, _, reward, _, _) =  tuple(ts)
+        self.policy.rewards.append(reward)
 
     def step(self, state):
         probs = self.policy.predict(state["obs"])
