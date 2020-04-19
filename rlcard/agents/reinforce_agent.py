@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from rlcard.utils.utils import remove_illegal
+from rlcard.utils.utils import remove_illegal_torch
 
 
 class PolicyNetwork(torch.nn.Module):
@@ -12,12 +12,15 @@ class PolicyNetwork(torch.nn.Module):
                  input_size,
                  output_size):
         super().__init__()
+        self.input_size = input_size
         self.linear1 = nn.Linear(input_size, 32)
         self.linear2 = nn.Linear(32, output_size)
 
     def forward(self, x):
+        x = x.view((-1, self.input_size))
         out = F.relu(self.linear1(x))
-        out = F.softmax(self.linear2(out))
+        # TODO check that the dimension along which to do compute the softmax is correct
+        out = F.softmax(self.linear2(out), dim=1)
         return out
 
 
@@ -30,11 +33,10 @@ class Policy:
                  learning_rate,
                  discount_factor,
                  device):
-        self.learning_rate = learning_rate
         self.discount_factor = discount_factor
         self.device = device
         self._init_policy_network(action_num, state_shape)
-        self.optimizer = torch.optim.Adam(self.policy_network.parameters)
+        self.optimizer = torch.optim.Adam(self.policy_network.parameters(), lr=learning_rate)
         self.log_probs = []
         self.rewards = []
 
@@ -75,19 +77,15 @@ class Policy:
 
 class ReinforceAgent:
     def __init__(self,
+                 scope,
+                 action_num,
+                 state_shape,
                  discount_factor=0.99,
-                 epsilon_start=1.0,
-                 epsilon_end=0.1,
-                 epsilon_decay_steps=20000,
-                 batch_size=32,
                  learning_rate=1e-5,
                  device=None):
-        self.discount_factor = discount_factor
-        self.epsilon_start = epsilon_start
-        self.epsilon_end = epsilon_end
-        self.epsilon_decay_steps = epsilon_decay_steps
-        self.batch_size = batch_size
-        self.learning_rate = learning_rate
+        # TODO: check that it is correct to have use_raw == False
+        self.use_raw = False
+        self.scope = scope
         self._init_device(device)
         self.policy = Policy(action_num=action_num, state_shape=state_shape, learning_rate=learning_rate,
                              discount_factor=discount_factor, device=device)
@@ -105,7 +103,7 @@ class ReinforceAgent:
     def step(self, state):
         probs = self.policy.predict(state["obs"])
         # TODO: check removing the actions like this is fine for the computation of the gradient
-        probs = remove_illegal(probs, state["legal_actions"])
+        probs = remove_illegal_torch(probs, state["legal_actions"])
         m = Categorical(probs)
         action = m.sample()
         self.policy.log_probs.append(m.log_prob(action))
@@ -114,10 +112,23 @@ class ReinforceAgent:
     def eval_step(self, state):
         with torch.no_grad():
             probs = self.policy.predict(state["obs"])
-            probs = remove_illegal(probs, state["legal_actions"])
+            probs = remove_illegal_torch(probs, state["legal_actions"])
             # TODO: could be also good to keep the policy stochastic also at evaluation
             best_action = np.argmax(probs)
-        return best_action
+        return best_action, probs
 
     def train(self):
         return self.policy.terminate_episode()
+
+    def get_state_dict(self):
+        ''' Get the state dict to save models
+
+        Returns:
+            (dict): A dict of model states
+        '''
+        policy_key = self.scope + 'policy_network'
+        policy = self.policy.policy_network.state_dict()
+        return {policy_key: policy}
+
+    def load(self):
+        raise NotImplementedError()

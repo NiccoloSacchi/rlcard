@@ -1,6 +1,7 @@
 import random
 import numpy as np
-
+import torch
+import tensorflow as tf
 from rlcard.core import Card, Player
 
 
@@ -328,10 +329,8 @@ def set_global_seed(seed):
         reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
         installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
         if 'tensorflow' in installed_packages:
-            import tensorflow as tf
             tf.set_random_seed(seed)
         if 'torch' in installed_packages:
-            import torch
             torch.manual_seed(seed)
         np.random.seed(seed)
         random.seed(seed)
@@ -355,6 +354,15 @@ def remove_illegal(action_probs, legal_actions):
         probs /= sum(probs)
     return probs
 
+def remove_illegal_torch(action_probs, legal_actions):
+    mask = torch.zeros(action_probs.shape)
+    mask[:, legal_actions] = 1
+    action_probs = action_probs * mask
+    if action_probs.sum() == 0:
+        action_probs[legal_actions] = action_probs + 1 / len(legal_actions)
+    else:
+        action_probs = action_probs / action_probs.sum()
+    return action_probs
 
 def assign_task(task_num, process_num):
     ''' Assign the number of tasks according to the number of processes
