@@ -5,9 +5,9 @@ from rlcard.agents.reinforce_agent import ReinforceAgent
 from rlcard.utils.utils import set_global_seed, tournament
 from rlcard.utils.logger import Logger
 
-episode_num = 10
-evaluate_num = 10
-evaluate_every = 1
+episode_num = 100000
+evaluate_num = 10000
+evaluate_every = 1000
 
 env = rlcard.make("blackjack")
 eval_env = rlcard.make("blackjack")
@@ -33,8 +33,8 @@ for episode in range(episode_num):
     for ts in trajectories[0]:
         agent.feed(ts)
 
-    loss = agent.train
-    logger.log(f"Loss: {loss}")
+    loss = agent.train()
+    # logger.log(f"Loss: {loss}")
 
     if episode % evaluate_every == 0:
         logger.log_performance(env.timestep, tournament(eval_env, evaluate_num)[0])
