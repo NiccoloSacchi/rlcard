@@ -12,12 +12,12 @@ class TheGamePlayer(object):
         self.player_id = player_id
         self.hand = []
     
-#     def set_game(self, game):
-#         '''
-#         Args:
-#             game (TheGameGame): pointer to the game that this player will play
-#         '''
-#         self.game = game
+    def set_game(self, game):
+        '''
+        Args:
+            game (TheGameGame): pointer to the game that this player will play
+        '''
+        self.game = game
     
     def reset(self):
         ''' Reset the status of the player. '''
@@ -86,4 +86,8 @@ class TheGamePlayer(object):
     
     def __str__(self):
         ''' Convert to string the id and the hand of the player. '''
-        return '{} hand: {}'.format(self.player_id, [c.rank for c in self.hand])        
+        return '{} hand: {}'.format(self.player_id, [c.rank for c in self.hand])
+    
+    def give_reward(self, next_state, reward):
+        ''' Give the reward for the last action. '''
+        pass
