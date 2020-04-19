@@ -69,8 +69,8 @@ class TheGameGame(object):
             dealer=Dealer(n=self.game_size)
         )
 
-#         for p in players:
-#             p.set_game(self)
+        for p in players:
+            p.set_game(self)
 
         self.reset()
 
@@ -113,12 +113,16 @@ class TheGameGame(object):
         # Go on until we do not win
         while not self.is_over():
             # Let the player pick the action
+            player = self.state.get_player()
             # TODO: possibly pass to the player only its view of the game (e.g. he cannot see other's hands)
-            action = self.state.players[self.state.game_pointer].get_action(self.state, self.state.legal_actions)
+            action = player.get_action(self.state, self.state.legal_actions)
             
             # Execute the action and update the game's state
             next_state, reward = self.step(action)
             
+            # Give the reward to the player
+            player.give_reward(next_state, reward)
+
             if self.verbose >= 1:
                 print('Reward:', reward)
         
