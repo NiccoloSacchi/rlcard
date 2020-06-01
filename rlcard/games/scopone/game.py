@@ -3,10 +3,9 @@ from rlcard.games.scopone.player import ScoponePlayer
 
 
 class ScoponeGame:
-    def __init__(self, card_to_index):
+    def __init__(self):
         self.num_players = 4
         self.num_rounds = 10
-        self.card_to_index = card_to_index
         self.current_round = 0
         self.current_player_id = 0
         self.table = set()
@@ -80,19 +79,17 @@ class ScoponeGame:
 
     def get_compatible_combinations(self, played_card):
         table_card_list = [c for c in self.table]
-        possible_combinations = self.get_combinations_lower_then(played_card, table_card_list)
+        possible_combinations = self.get_combinations_lower_then(played_card.value, table_card_list)
         return [c for c in possible_combinations if sum([el.value for el in c]) == played_card.value]
 
-    def get_combinations_lower_then(self, card, card_list):
-        possible_cards = [c.value for c in card_list if c <= card.value]
+    def get_combinations_lower_then(self, value, card_list):
+        possible_cards = [c for c in card_list if c.value <= value]
         if not possible_cards:
             return []
-        elif len(possible_cards) == 1:
-            return possible_cards
         else:
             result = [[c] for c in possible_cards]
             for idx, c in enumerate(possible_cards):
-                other_combinations = self.get_combinations_lower_then(card.value - c, possible_cards[idx + 1:])
+                other_combinations = self.get_combinations_lower_then(value - c.value, possible_cards[idx + 1:])
                 for combination in other_combinations:
                     result.append([c] + combination)
             return result
@@ -113,7 +110,16 @@ class ScoponeGame:
     #         tentative_combinations_list = next_tentative_combinations_list
 
 
+if __name__ == "__main__":
+    game = ScoponeGame()
+    deck = game.deck
+    game.table = {deck.get_card(0), deck.get_card(3), deck.get_card(6), deck.get_card(12), deck.get_card(21)}
+    played_card = deck.get_card(9)
 
+    compatible_combinations = game.get_compatible_combinations(played_card)
+
+    for combination in compatible_combinations:
+        print([c.id for c in combination])
 
 
 
