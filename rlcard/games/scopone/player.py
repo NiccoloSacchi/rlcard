@@ -6,7 +6,7 @@ class ScoponePlayer:
         self.captured = set()
         self.scope = 0
 
-    def get_state(self, table, legal_actions):
+    def get_state(self):
         """Encode the state for the player in a dictionary
         :param table: cards on the table
         :type table: List[String]
