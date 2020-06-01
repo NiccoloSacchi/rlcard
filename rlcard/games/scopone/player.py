@@ -4,6 +4,7 @@ class ScoponePlayer:
         self.player_id = player_id
         self.hand = set()
         self.captured = set()
+        self.scope = 0
 
     def get_state(self, table, legal_actions):
         """Encode the state for the player in a dictionary
@@ -15,5 +16,8 @@ class ScoponePlayer:
         :rtype: dict(string: List[Int])
         """
         state = {}
-        state["hand"] = []
+        state["hand"] = self.hand
+        state["captured"] = self.captured
+        state["scope"] = self.scope
+        return state
 
