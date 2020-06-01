@@ -15,6 +15,12 @@ class ScoponeGame:
         self.deck = Deck()
         self.last_player_capturing_id = None
 
+    def get_player_num(self):
+        return 4
+
+    def get_action_num(self):
+        return 40
+
     def get_state(self):
         state = {}
         state["table"] = self.table
@@ -23,6 +29,10 @@ class ScoponeGame:
         for idx in range(self.num_players):
             state[f"player_{idx}"] = self.players[idx].get_state()
         return state
+
+    def get_legal_actions(self):
+        current_player_hand = self.players[self.current_player_id].hand
+        return [card.id for card in current_player_hand]
 
     def is_over(self):
         is_last_round = (self.current_round == self.num_rounds - 1)
@@ -76,6 +86,7 @@ class ScoponeGame:
         else:
             self.current_player_id += 1
         self.current_round += 1
+        return self.get_state(), self.current_player_id
 
     # TODO: make this more rigorous - e.g, then give priority to 6, 5, ...
     def _get_best_combination(self, played_card):
