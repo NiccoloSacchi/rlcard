@@ -13,6 +13,7 @@ class ScoponeGame:
         self.table = set()
         self.players = [ScoponePlayer(i) for i in range(self.num_players)]
         self.deck = Deck()
+        self.last_player_capturing_id = None
 
     def get_state(self):
         state = {}
@@ -37,7 +38,6 @@ class ScoponeGame:
 
         return self._compute_payoff(captured_0_2, scope_0_2, captured_1_3, scope_1_3)
 
-
     def step(self, action):
         """
         Executes the action for one player, consisting in moving a card from his hand to the table.
@@ -57,6 +57,7 @@ class ScoponeGame:
         player.hand.remove(card)
         best_combination_on_the_table = self._get_best_combination(card)
         if best_combination_on_the_table:
+            self.last_player_capturing_id = self.current_player_id
             self.table.remove(card)
             player.captured.add(card)
             for c in best_combination_on_the_table:
@@ -65,10 +66,15 @@ class ScoponeGame:
         else:
             self.table.add(card)
 
-        if self.current_player == self.num_players - 1:
-            self.current_player = 0
+        if self.is_over():
+            last_player_capturing = self.players[self.last_player_capturing_id]
+            for card in self.table:
+                last_player_capturing.captured.add(card)
+
+        if self.current_player_id == self.num_players - 1:
+            self.current_player_id = 0
         else:
-            self.current_player += 1
+            self.current_player_id += 1
         self.current_round += 1
 
     # TODO: make this more rigorous - e.g, then give priority to 6, 5, ...
@@ -169,7 +175,6 @@ class ScoponeGame:
             count_1 += 1
 
         return count_0, count_1
-
 
     # def compatible_cards(self, played_card):
     #     final_combinations_list = [[c] for c in self.table if c.value == played_card.value]
