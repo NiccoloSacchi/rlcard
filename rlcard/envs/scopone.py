@@ -51,13 +51,13 @@ class ScoponeEnv(Env):
         return extracted_state
 
     def get_payoffs(self):
-        self.game.get_payoffs()
+        return self.game.get_payoffs()
 
     def get_perfect_information(self):
-        self.game.get_state()
+        return self.game.get_state()
 
     def _decode_action(self, action_id):
         return self.game.deck.get_card(action_id)
 
     def _get_legal_actions(self):
-        self.game.get_legal_actions()
+        return self.game.get_legal_actions()

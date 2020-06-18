@@ -8,7 +8,7 @@ from rlcard.utils.logger import Logger
 from rlcard.utils.utils import set_global_seed, tournament
 
 env = rlcard.make("scopone")
-eval_env = rlcard.make('leduc-holdem')
+eval_env = rlcard.make('scopone')
 
 # Set the iterations numbers and how frequently we evaluate the performance
 evaluate_every = 100

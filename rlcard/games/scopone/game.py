@@ -190,16 +190,18 @@ class ScoponeGame:
         primiera_sum_0 = 0
         primiera_sum_1 = 0
         for suit in Deck.SUITS:
-            best_val_0 = max([c.primiera_value for c in captured_0 if c.suit == suit])
-            primiera_sum_0 += best_val_0
-            best_val_1 = max([c.primiera_value for c in captured_1 if c.suit == suit])
-            primiera_sum_1 += best_val_1
+            primiera_value_suit_0 = [c.primiera_value for c in captured_0 if c.suit == suit]
+            if primiera_value_suit_0:
+                primiera_sum_0 = max(primiera_value_suit_0)
+            primiera_value_suit_1 = [c.primiera_value for c in captured_1 if c.suit == suit]
+            if primiera_value_suit_1:
+                primiera_sum_1 += max(primiera_value_suit_1)
         if primiera_sum_0 > primiera_sum_1:
             count_0 += 1
         elif primiera_sum_1 > primiera_sum_0:
             count_1 += 1
 
-        return count_0, count_1
+        return count_0, count_1, count_0, count_1
 
     # def compatible_cards(self, played_card):
     #     final_combinations_list = [[c] for c in self.table if c.value == played_card.value]
