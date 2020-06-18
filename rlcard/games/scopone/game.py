@@ -1,6 +1,4 @@
-from collections import Set
-
-from rlcard.games.scopone.deck import Deck, Card
+from rlcard.games.scopone.deck import Deck
 from rlcard.games.scopone.player import ScoponePlayer
 
 
@@ -21,10 +19,22 @@ class ScoponeGame:
     def get_action_num(self):
         return 40
 
-    def get_state(self):
+    def init_game(self):
+        self.current_player_id = 0
+        self.current_round = 0
+        self.table = set()
+        self.players = [ScoponePlayer(i) for i in range(self.num_players)]
+        for player, cards in zip(self.players, self.deck.distribute_cards()):
+            player.give_cards(cards)
+        self.last_player_capturing_id = None
+        return self.get_state(), self.current_player_id
+
+    def get_state(self, player_id=None):
+        if player_id is None:
+            player_id = self.current_player_id
         state = {}
         state["table"] = self.table
-        state["current_player"] = self.current_player_id
+        state["current_player"] = player_id
         state["current_round"] = self.current_round
         for idx in range(self.num_players):
             state[f"player_{idx}"] = self.players[idx].get_state()
@@ -35,9 +45,9 @@ class ScoponeGame:
         return [card.id for card in current_player_hand]
 
     def is_over(self):
-        is_last_round = (self.current_round == self.num_rounds - 1)
-        is_last_player = (self.current_player_id == self.num_players - 1)
-        return is_last_round and is_last_player
+        last_round_is_over = (self.current_round == self.num_rounds)
+        last_player_has_played = (self.current_player_id == 0)
+        return last_round_is_over and last_player_has_played
 
     def get_payoffs(self):
         captured_0_2 = self.players[0].captured.union(self.players[2].captured)
@@ -59,33 +69,38 @@ class ScoponeGame:
         assert self.current_round < self.num_rounds
 
         player = self.players[self.current_player_id]
-        card = self.deck.get_card(action)
+        card = action
 
         if card not in player.hand:
             raise ValueError("Action not allowed because the card is not in the player's hand")
 
         player.hand.remove(card)
+        print(f"Player {self.current_player_id} played the card {card.id}")
         best_combination_on_the_table = self._get_best_combination(card)
         if best_combination_on_the_table:
             self.last_player_capturing_id = self.current_player_id
-            self.table.remove(card)
             player.captured.add(card)
             for c in best_combination_on_the_table:
                 self.table.remove(c)
                 player.captured.add(c)
+                if not self.table:
+                    player.scope += 1
         else:
             self.table.add(card)
-
-        if self.is_over():
-            last_player_capturing = self.players[self.last_player_capturing_id]
-            for card in self.table:
-                last_player_capturing.captured.add(card)
+        print(f"Cards on the table after play: {[c.id  for c in self.table]}")
 
         if self.current_player_id == self.num_players - 1:
             self.current_player_id = 0
+            self.current_round += 1
+            print(f"=========== Round {self.current_round} completed ============")
         else:
             self.current_player_id += 1
-        self.current_round += 1
+
+        if self.is_over():
+            last_player_capturing = self.players[self.last_player_capturing_id]
+            print(f"Giving the remaining cards to player {last_player_capturing.player_id}")
+            for card in self.table:
+                last_player_capturing.captured.add(card)
         return self.get_state(), self.current_player_id
 
     # TODO: make this more rigorous - e.g, then give priority to 6, 5, ...
@@ -119,19 +134,18 @@ class ScoponeGame:
         diamonds_count = [len([card for card in combination if card.suit == "D"]) for combination in best_combinations]
         max_diamonds = max(diamonds_count)
         combinations_max_diamonds = [c for c, count in zip(best_combinations, diamonds_count) if count == max_diamonds]
-        if len(combinations_max_diamonds) == 1:
-            return combinations_max_diamonds[0]
-        else:
-            # heuristic 4: get most cards
-            cards_count = [len(combination) for combination in combinations_max_diamonds]
-            max_cards = max(cards_count)
-            combinations_max_cards = [c for c, count in zip(compatible_combinations, cards_count) if count == max_cards]
-            return combinations_max_cards[0]
+        return combinations_max_diamonds[0]
 
     def _get_compatible_combinations(self, played_card):
         table_card_list = [c for c in self.table]
         possible_combinations = self._get_combinations_lower_then(played_card.value, table_card_list)
-        return [c for c in possible_combinations if sum([el.value for el in c]) == played_card.value]
+        correct_sum_combinations = [c for c in possible_combinations if
+                                    sum([el.value for el in c]) == played_card.value]
+        if not correct_sum_combinations:
+            return []
+        else:
+            shortest_combination_len = min([len(c) for c in correct_sum_combinations])
+            return [c for c in correct_sum_combinations if len(c) == shortest_combination_len]
 
     def _get_combinations_lower_then(self, value, card_list):
         possible_cards = [c for c in card_list if c.value <= value]
@@ -145,7 +159,7 @@ class ScoponeGame:
                     result.append([c] + combination)
             return result
 
-    def _compute_payoff(self, captured_0: Set[Card], scope_0: int, captured_1: Set[Card], scope_1: int):
+    def _compute_payoff(self, captured_0, scope_0, captured_1, scope_1):
         count_0 = scope_0
         count_1 = scope_1
 

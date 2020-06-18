@@ -21,3 +21,6 @@ class ScoponePlayer:
         state["scope"] = self.scope
         return state
 
+    def give_cards(self, cards):
+        for card in cards:
+            self.hand.add(card)
