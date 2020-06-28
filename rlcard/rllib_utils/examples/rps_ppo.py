@@ -26,3 +26,5 @@ trainer = PPOTrainer(config=ppo_trainer_config)
 for i in range(5):
     res = trainer.train()
     print("Iteration {}. episode_reward_mean: {}".format(i, res['episode_reward_mean']))
+
+print('Training finished, check the results in ~/ray_results/<dir>/')

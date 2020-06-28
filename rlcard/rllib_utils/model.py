@@ -1,4 +1,5 @@
 import tensorflow as tf
+from ray.rllib.models.preprocessors import get_preprocessor
 from ray.rllib.models.tf.tf_modelv2 import TFModelV2
 from ray.rllib.models.tf.fcnet_v2 import FullyConnectedNetwork
 from gym.spaces import Box
@@ -29,8 +30,12 @@ class ParametricActionsModel(TFModelV2):
         if action_embed_size is None:
             action_embed_size = action_space.n  # this works for Discrete() action
 
+        # we get the size of the output of the preprocessor automatically chosen by rllib for the real_obs space
+        real_obs = obs_space.original_space['real_obs']
+        true_obs_shape = get_preprocessor(real_obs)(real_obs).size  # this will we an integer
+        # true_obs_shape = obs_space.original_space['real_obs']
         self.action_embed_model = FullyConnectedNetwork(
-            obs_space=Box(-1, 1, shape=true_obs_shape),
+            obs_space=Box(-1, 1, shape=(true_obs_shape, )),
             action_space=action_space,
             num_outputs=action_embed_size,
             model_config=model_config,
