@@ -329,7 +329,7 @@ def set_global_seed(seed):
         reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
         installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
         if 'tensorflow' in installed_packages:
-            tf.set_random_seed(seed)
+            tf.compat.v1.set_random_seed(seed)
         if 'torch' in installed_packages:
             torch.manual_seed(seed)
         np.random.seed(seed)
@@ -377,6 +377,7 @@ def assign_task(task_num, process_num):
     per_tasks = [task_num // process_num] * process_num
     per_tasks[0] += (task_num % process_num)
     return per_tasks
+
 
 def tournament(env, num):
     ''' Evaluate he performance of the agents in the environment
