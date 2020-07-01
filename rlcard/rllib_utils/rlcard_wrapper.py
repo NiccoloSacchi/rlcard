@@ -53,8 +53,12 @@ class RLCardWrapper(MultiAgentEnv):
 
     def step(self, action_dict):
         # There is always only one player playing per turn: take and execute the action of the current player
-        curr_player_id = self.rlcard_env.active_player
-        action = action_dict[self.players[curr_player_id]]
+        # TODO: wrong!!! Active player is just the training player in single agent mode
+        # curr_player_id = self.rlcard_env.active_player
+        print(f"Action dict: {action_dict}")
+        assert len(action_dict) == 1
+        # action = action_dict[self.players[curr_player_id]]
+        action = next(iter(action_dict.values()))
         next_state, next_player_id = self.rlcard_env.step(action, raw_action=False)
 
         # Get the state for the next player, reward is defaulted to 0 until the end of the game
