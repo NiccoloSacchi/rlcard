@@ -203,21 +203,6 @@ class ScoponeGame:
 
         return count_0, count_1, count_0, count_1
 
-    # def compatible_cards(self, played_card):
-    #     final_combinations_list = [[c] for c in self.table if c.value == played_card.value]
-    #     tentative_combinations_list = [[c] for c in self.table if c.value < played_card.value]
-    #     next_tentative_combinations_list = []
-    #     while tentative_combinations_list:
-    #         for combination in tentative_combinations_list:
-    #             for card in self.table:
-    #                 if card not in combination:
-    #                     new_combination = [c for c in combination] + [card]
-    #                     if sum(combination) + card.value < played_card.value:
-    #                         next_tentative_combinations_list.append(new_combination)
-    #                     elif sum(combination) == played_card.value:
-    #                         final_combinations_list.append(new_combination)
-    #         tentative_combinations_list = next_tentative_combinations_list
-
 
 if __name__ == "__main__":
     game = ScoponeGame()
