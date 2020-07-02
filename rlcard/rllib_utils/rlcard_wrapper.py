@@ -55,7 +55,7 @@ class RLCardWrapper(MultiAgentEnv):
         # There is always only one player playing per turn: take and execute the action of the current player
         # TODO: wrong!!! Active player is just the training player in single agent mode
         # curr_player_id = self.rlcard_env.active_player
-        print(f"Action dict: {action_dict}")
+        # print(f"Action dict: {action_dict}")
         assert len(action_dict) == 1
         # action = action_dict[self.players[curr_player_id]]
         action = next(iter(action_dict.values()))
