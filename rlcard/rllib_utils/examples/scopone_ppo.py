@@ -7,7 +7,7 @@ from rlcard.rllib_utils.model import ParametricActionsModel
 from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
 
 rlcard_env_id = 'scopone'
-checkpoint_path = r"C:\Users\chiappal\ray_results\PPO_ParametricScopone_2020-07-03_17-11-49g0xkzy5r\checkpoint_10\checkpoint-10"
+checkpoint_path = r"C:\Users\chiappal\ray_results\PPO_ParametricScopone_2020-07-03_17-32-1762krv6zp\checkpoint_20\checkpoint-20"
 restore_checkpoint = True
 
 scopone_env = RLCardWrapper(rlcard_env_id=rlcard_env_id)
@@ -53,7 +53,7 @@ if restore_checkpoint:
 trainer.get_policy("ppo_policy_albi").model.base_model.summary()
 trainer.get_policy("ppo_policy_nico").model.base_model.summary()
 
-for i in range(10):
+for i in range(200):
     res = trainer.train()
     print("Iteration {}. policy_reward_mean: {}".format(i, res['policy_reward_mean']))
     trainer.save()

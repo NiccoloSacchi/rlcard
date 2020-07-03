@@ -56,7 +56,9 @@ class ScoponeGame:
         captured_1_3 = self.players[1].captured.union(self.players[3].captured)
         scope_1_3 = self.players[1].scope + self.players[3].scope
 
-        return self._compute_payoff(captured_0_2, scope_0_2, captured_1_3, scope_1_3)
+        score_team_0, score_team_1 = self._compute_payoff(captured_0_2, scope_0_2, captured_1_3, scope_1_3)
+        adv_team_0 = score_team_0 - score_team_1
+        return adv_team_0, -adv_team_0, adv_team_0, -adv_team_0
 
     def step(self, action):
         """
@@ -205,7 +207,7 @@ class ScoponeGame:
         elif primiera_sum_1 > primiera_sum_0:
             count_1 += 1
 
-        return count_0, count_1, count_0, count_1
+        return count_0, count_1
 
 
 if __name__ == "__main__":
