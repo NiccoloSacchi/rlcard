@@ -12,7 +12,7 @@ class ScoponeEnv(Env):
         super().__init__(config)
         self.actions = list(range(self.game.get_action_num()))
         # + 2 because of table and hand, plus captured cards per each player
-        self.state_shape = [self.game.get_player_num() + 2, self.game.get_action_num()]
+        self.state_shape = [2 * self.game.get_player_num() + 2, self.game.get_action_num()]
 
     def _load_model(self):
         pass
@@ -39,15 +39,21 @@ class ScoponeEnv(Env):
         cards_on_table_vec[cards_on_table_idx] = 1
 
         captured_cards_vec = np.zeros((self.game.get_player_num(), self.game.get_action_num()), dtype=int)
+        played_cards_vec = np.zeros((self.game.get_player_num(), self.game.get_action_num()), dtype=int)
         for player_id in range(self.game.get_player_num()):
             captured_cards = state[f"player_{player_id}"]["captured"]
             captured_cards_idx = [c.index for c in captured_cards]
             captured_cards_vec[player_id, captured_cards_idx] = 1
+            played_cards = state[f"player_{player_id}"]["played"]
+            played_cards_idx = [c.index for c in played_cards]
+            played_cards_vec[player_id, played_cards_idx] = 1
 
-        extracted_state["obs"] = np.concatenate((cards_on_table_vec.reshape(1, 40),
-                                                 allowed_actions_vec.reshape(1, 40),
-                                                 captured_cards_vec),
+        extracted_state["obs"] = np.concatenate((allowed_actions_vec.reshape(1, 40),
+                                                 cards_on_table_vec.reshape(1, 40),
+                                                 captured_cards_vec,
+                                                 played_cards_vec),
                                                 axis=0)
+
         return extracted_state
 
     def get_payoffs(self):

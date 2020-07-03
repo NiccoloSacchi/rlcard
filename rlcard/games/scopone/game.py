@@ -75,6 +75,7 @@ class ScoponeGame:
             raise ValueError("Action not allowed because the card is not in the player's hand")
 
         player.hand.remove(card)
+        player.played.add(card)
         print(f"Player {self.current_player_id} played the card {card.id}")
         best_combination_on_the_table = self._get_best_combination(card)
         if best_combination_on_the_table:
@@ -101,6 +102,9 @@ class ScoponeGame:
             print(f"Giving the remaining cards to player {last_player_capturing.player_id}")
             for card in self.table:
                 last_player_capturing.captured.add(card)
+                self.table = set()
+            assert all([len(p.played) == 10 for p in self.players])
+            assert all([len(p.hand) == 0 for p in self.players])
         return self.get_state(), self.current_player_id
 
     # TODO: make this more rigorous - e.g, then give priority to 6, 5, ...
