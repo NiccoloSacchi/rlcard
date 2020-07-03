@@ -3,15 +3,18 @@ from rlcard.games.scopone.player import ScoponePlayer
 
 
 class ScoponeGame:
+    player_starting = 0
+
     def __init__(self):
         self.num_players = 4
         self.num_rounds = 10
-        self.current_round = 0
-        self.current_player_id = 0
-        self.table = set()
-        self.players = [ScoponePlayer(i) for i in range(self.num_players)]
+        self.current_round = None
+        self.current_player_id = None
+        self.table = None
+        self.players = None
         self.deck = Deck()
         self.last_player_capturing_id = None
+        self.first_player_this_game = None
 
     def get_player_num(self):
         return 4
@@ -20,7 +23,9 @@ class ScoponeGame:
         return 40
 
     def init_game(self):
-        self.current_player_id = 0
+        self.current_player_id = self.player_starting
+        self.first_player_this_game = self.current_player_id
+        self.player_starting = (self.player_starting + 1) % self.num_players
         self.current_round = 0
         self.table = set()
         self.players = [ScoponePlayer(i) for i in range(self.num_players)]
@@ -46,7 +51,7 @@ class ScoponeGame:
 
     def is_over(self):
         last_round_is_over = (self.current_round == self.num_rounds)
-        last_player_has_played = (self.current_player_id == 0)
+        last_player_has_played = (self.current_player_id == self.first_player_this_game)
         return last_round_is_over and last_player_has_played
 
     def get_payoffs(self):
@@ -57,6 +62,7 @@ class ScoponeGame:
         scope_1_3 = self.players[1].scope + self.players[3].scope
 
         score_team_0, score_team_1 = self._compute_payoff(captured_0_2, scope_0_2, captured_1_3, scope_1_3)
+
         adv_team_0 = score_team_0 - score_team_1
         return adv_team_0, -adv_team_0, adv_team_0, -adv_team_0
 
@@ -78,7 +84,7 @@ class ScoponeGame:
 
         player.hand.remove(card)
         player.played.add(card)
-        print(f"Player {self.current_player_id} played the card {card.id}")
+        # print(f"Player {self.current_player_id} with hand {[c.id for c in player.hand]} played the card {card.id}")
         best_combination_on_the_table = self._get_best_combination(card)
         if best_combination_on_the_table:
             self.last_player_capturing_id = self.current_player_id
@@ -90,18 +96,16 @@ class ScoponeGame:
                     player.scope += 1
         else:
             self.table.add(card)
-        print(f"Cards on the table after play: {[c.id  for c in self.table]}")
+        # print(f"Cards on the table after play: {[c.id  for c in self.table]}")
 
-        if self.current_player_id == self.num_players - 1:
-            self.current_player_id = 0
+        if self.current_player_id == (self.first_player_this_game + self.num_players - 1) % self.num_players:
             self.current_round += 1
-            print(f"=========== Round {self.current_round} completed ============")
-        else:
-            self.current_player_id += 1
+            # print(f"=========== Round {self.current_round} completed ============")
+        self.current_player_id = (self.current_player_id + 1) % self.num_players
 
         if self.is_over():
             last_player_capturing = self.players[self.last_player_capturing_id]
-            print(f"Giving the remaining cards to player {last_player_capturing.player_id}")
+            # print(f"Giving the remaining cards to player {last_player_capturing.player_id}")
             for card in self.table:
                 last_player_capturing.captured.add(card)
                 self.table = set()
@@ -171,6 +175,7 @@ class ScoponeGame:
 
         # settebello
         if any([c.value == 7 and c.suit == "D" for c in captured_0]):
+            assert all([c.value != 7 or c.suit != "D" for c in captured_1])
             count_0 += 1
         else:
             assert any([c.value == 7 and c.suit == "D" for c in captured_1])
@@ -198,7 +203,7 @@ class ScoponeGame:
         for suit in Deck.SUITS:
             primiera_value_suit_0 = [c.primiera_value for c in captured_0 if c.suit == suit]
             if primiera_value_suit_0:
-                primiera_sum_0 = max(primiera_value_suit_0)
+                primiera_sum_0 += max(primiera_value_suit_0)
             primiera_value_suit_1 = [c.primiera_value for c in captured_1 if c.suit == suit]
             if primiera_value_suit_1:
                 primiera_sum_1 += max(primiera_value_suit_1)
