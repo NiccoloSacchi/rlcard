@@ -13,7 +13,6 @@ class RLCardWrapper(MultiAgentEnv):
 
     Of the rlcard environment you have to pass the name, the low and high values of the observation space
     """
-
     def __init__(self, rlcard_env_id, config={}):
         # create the rlcard environment
         self.rlcard_env = rlcard.make(rlcard_env_id)
@@ -55,7 +54,7 @@ class RLCardWrapper(MultiAgentEnv):
         # There is always only one player playing per turn: take and execute the action of the current player
         # TODO: wrong!!! Active player is just the training player in single agent mode
         # curr_player_id = self.rlcard_env.active_player
-        print(f"Action dict: {action_dict}")
+        # print(f"Action dict: {action_dict}")
         assert len(action_dict) == 1
         # action = action_dict[self.players[curr_player_id]]
         action = next(iter(action_dict.values()))
@@ -70,7 +69,7 @@ class RLCardWrapper(MultiAgentEnv):
         # if the game is done we get the rewards for all the players
         if self.rlcard_env.game.is_over():
             reward = {name: r for name, r in zip(self.players, self.rlcard_env.get_payoffs())}
-            print(f"Episode over, reward: {reward}")
+            # print(f"Episode over, reward: {reward}")
             obs = {self.players[player_id]: self.get_state(self.rlcard_env.get_state(player_id)) for player_id in range(len(self.players))}
             done = {"__all__": True}
 
