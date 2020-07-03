@@ -70,6 +70,7 @@ class RLCardWrapper(MultiAgentEnv):
         # if the game is done we get the rewards for all the players
         if self.rlcard_env.game.is_over():
             reward = {name: r for name, r in zip(self.players, self.rlcard_env.get_payoffs())}
+            print(f"Episode over, reward: {reward}")
             obs = {self.players[player_id]: self.get_state(self.rlcard_env.get_state(player_id)) for player_id in range(len(self.players))}
             done = {"__all__": True}
 
