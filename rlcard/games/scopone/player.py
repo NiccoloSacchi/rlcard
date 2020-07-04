@@ -4,6 +4,7 @@ class ScoponePlayer:
         self.player_id = player_id
         self.hand = set()
         self.captured = set()
+        self.played = set()
         self.scope = 0
 
     def get_state(self):
@@ -18,6 +19,7 @@ class ScoponePlayer:
         state = {}
         state["hand"] = self.hand
         state["captured"] = self.captured
+        state["played"] = self.played
         state["scope"] = self.scope
         return state
 
