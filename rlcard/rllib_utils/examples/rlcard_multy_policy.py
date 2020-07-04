@@ -3,7 +3,7 @@ from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
 from ray.rllib.agents.dqn.dqn_tf_policy import DQNTFPolicy
-from rlcard.rllib_utils.random_policy import create_RandomPolicy
+from rlcard.rllib_utils.random_policy import RandomPolicy
 
 from rlcard.rllib_utils.model import ParametricActionsModel
 from ray.rllib.models import ModelCatalog
@@ -36,7 +36,7 @@ ray.init(num_cpus=4)
 #
 # Define the policies
 ppo_trainer_config = {
-    "env": rlcard_env_id,
+    # "env": rlcard_env_id,
     "model": {
         "custom_model": "parametric_model_tf",
     },
@@ -47,7 +47,7 @@ policies = {
                      env_tmp.observation_space,
                      env_tmp.action_space,
                      ppo_trainer_config),
-    "rand_policy": (create_RandomPolicy(seed=0),
+    "rand_policy": (RandomPolicy,
                     env_tmp.observation_space,
                     env_tmp.action_space,
                     {}),
@@ -72,10 +72,11 @@ trainer = PPOTrainer(config={
         "policy_mapping_fn": lambda agent_id: "ppo_policy_1",
     },
     # "num_gpus": 0.5,
+    # "num_gpus_per_worker": 0,
 })
 
 start = time.time()
-for i in range(100):
+for i in range(10):
     trainer.set_weights(trainer_eval.get_weights(["ppo_policy_1"]))
     trainer.train()
 
