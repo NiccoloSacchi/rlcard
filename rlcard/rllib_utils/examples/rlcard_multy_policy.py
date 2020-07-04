@@ -11,6 +11,8 @@ from ray.rllib.models import ModelCatalog
 from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
 from ray.tune.registry import register_env
 
+import time
+
 # Decide which RLcard environment to use
 # rlcard_env_id = 'blackjack'
 # rlcard_env_id = 'doudizhu'
@@ -29,8 +31,9 @@ register_env(rlcard_env_id, RLCardWrapped)
 ModelCatalog.register_custom_model("parametric_model_tf", ParametricActionsModel)
 
 # Initialize ray
+# ray.init(num_cpus=4, num_gpus=1)
 ray.init(num_cpus=4)
-
+#
 # Define the policies
 ppo_trainer_config = {
     "env": rlcard_env_id,
@@ -58,9 +61,7 @@ trainer_eval = PPOTrainer(config={
         "policies": policies,
         "policy_mapping_fn": lambda agent_id: "ppo_policy_1" if agent_id == "player_1" else "rand_policy",
     },
-    # disable filters, otherwise we would need to synchronize those
-    # as well to the DQN agent
-    "observation_filter": "NoFilter",
+    # "num_gpus": 0.5,
 })
 
 trainer = PPOTrainer(config={
@@ -70,9 +71,11 @@ trainer = PPOTrainer(config={
         "policies": policies,
         "policy_mapping_fn": lambda agent_id: "ppo_policy_1",
     },
+    # "num_gpus": 0.5,
 })
 
-for i in range(20):
+start = time.time()
+for i in range(100):
     trainer.set_weights(trainer_eval.get_weights(["ppo_policy_1"]))
     trainer.train()
 
@@ -81,5 +84,6 @@ for i in range(20):
 
     policy_rewards = sorted(['{}: {}'.format(k, v) for k, v in res['policy_reward_mean'].items()])
     print("Iteration {}. policy_reward_mean: {}".format(i, policy_rewards))
-
-print('Training finished, check the results in ~/ray_results/<dir>/')
+stop = time.time()
+train_duration = time.strftime('%H:%M:%S', time.gmtime(stop-start))
+print('Training finished ({}), check the results in ~/ray_results/<dir>/'.format(train_duration))

@@ -8,8 +8,10 @@ from ray.rllib.models import ModelCatalog
 from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
 from ray.tune.registry import register_env
 
+import time
+
 # Decide which RLcard environment to use
-# rlcard_env_id = 'blackjack'
+rlcard_env_id = 'blackjack'
 # rlcard_env_id = 'doudizhu'
 # rlcard_env_id = 'gin-rummy'
 # rlcard_env_id = 'leduc-holdem'
@@ -17,7 +19,7 @@ from ray.tune.registry import register_env
 # rlcard_env_id = 'mahjong'
 # rlcard_env_id = 'no-limit-holdem'
 # rlcard_env_id = 'simple-doudizhu'
-rlcard_env_id = 'uno'
+# rlcard_env_id = 'uno'
 
 # Decide with which algorithm to train
 # Trainer = DQNTrainer
@@ -39,9 +41,12 @@ trainer_config = {
 }
 
 trainer = Trainer(config=trainer_config)
+
+start = time.time()
 for i in range(5):
     res = trainer.train()
     print("Iteration {}. episode_reward_mean: {}".format(i, res['episode_reward_mean']))
     print(res)
-
-print('Training finished, check the results in ~/ray_results/<dir>/')
+stop = time.time()
+train_duration = time.strftime('%H:%M:%S', time.gmtime(stop-start))
+print('Training finished ({}), check the results in ~/ray_results/<dir>/'.format(train_duration))
