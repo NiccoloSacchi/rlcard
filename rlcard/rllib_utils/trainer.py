@@ -1,12 +1,10 @@
 from ray import tune
-import ray
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
 from ray.rllib.agents.dqn.dqn_tf_policy import DQNTFPolicy
 from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
-from ray.tune.logger import pretty_print
 
 from rlcard.rllib_utils.random_policy import RandomPolicy
 from rlcard.rllib_utils.model import ParametricActionsModel
@@ -14,10 +12,6 @@ from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
 
 import time
 
-import tensorflow as tf
-print("tf version: ", tf.__version__)
-print("is_gpu_available: ", tf.test.is_gpu_available())
-exit()
 
 class RLTrainer:
     """
@@ -46,6 +40,7 @@ class RLTrainer:
             # "env": rlcard_env_id,
             "model": {
                 "custom_model": "parametric_model_tf",
+                # 'fcnet_hiddens': [256, 256, 256]
             },
             # disable filters, otherwise we would need to synchronize those
             # as well to the DQN agent
@@ -54,7 +49,7 @@ class RLTrainer:
         DQNTFPolicy: {
             "model": {
                 "custom_model": "parametric_model_tf",
-                # 'fcnet_hiddens': [100, 100]
+                # 'fcnet_hiddens': [256, 256, 256]
             },
             # TODO(ekl) we need to set these to prevent the masked values
             # from being further processed in DistributionalQModel, which
@@ -115,8 +110,8 @@ class RLTrainer:
             trainer_class = self.POLICY_TO_TRAINER[policy_class]
             if trainer_class is not None:  # RandomPolicy is not to be trained and has trainer None
                 if trainer_class not in policies_to_train:
-                    policies_to_train[trainer_class] = []
-                policies_to_train[trainer_class].append(policy_name)
+                    policies_to_train[trainer_class] = set()
+                policies_to_train[trainer_class].add(policy_name)
 
         # 3. Finally collect all the trainers config
         trainer_to_config = {}  # {trainer class: trainer config}
@@ -132,21 +127,40 @@ class RLTrainer:
             trainer_to_config[trainer_class].update(resources)
         return trainer_to_config
 
-    def train(self, stop=None):
+    def train(self, stop=None, restore=None):
+        # -------- Most interesting parameters for trainer setting --------
+        # callbacks: <class 'ray.rllib.agents.callbacks.DefaultCallbacks'>
+        # env_config: {}
+        # evaluation_config: {}
+        # evaluation_num_episodes: 10
+        # gamma: 0.99
+        # lr: 5.0e-05
+        # model:
+        #   fcnet_activation: tanh
+        #   fcnet_hiddens:
+        #   - 256
+        #   - 256
+        #   use_lstm: false
+        # num_gpus: 0
+        # num_gpus_per_worker: 0
+        # num_cpus_per_worker: 1,
+        # num_workers: 2
+        # train_batch_size: 4000
 
         start = time.time()
+        # TODO: (1) add evaluation, (2) add support for multi policy training
         if len(self.trainer_to_config) > 1:
             raise NotImplementedError('Support for multiple policy training still to be implemented, please set agents with same policy.')
             # # --- Initialize ray ---
-            # # ray.init(num_cpus=4, num_gpus=1)  # TODO: add support for GPUs
+            # # ray.init(num_cpus=4, num_gpus=1)
             # ray.init(num_cpus=4)
 
+            # TODO: iterate over all the trainers then propagate all the model parameters at the end of every iteration
             # # Instantiate all the trainers
             # trainers = []
             # for trainer_class, trainer_config in self.trainer_to_config.items():
             #     # print(policies)
             #     trainers.append(trainer_class(trainer_config))
-            # TODO: iterate over all the trainers then propaate all the model parameters at the end of every iteration
             # # Train all the trainers
             # for i in range(stop['training_iteration']):
             #     trainer.config.policies_to_train
@@ -159,85 +173,22 @@ class RLTrainer:
             #     print("Iteration {}. policy_reward_mean: {}".format(i, policy_rewards))
         else:
             # If there is only one trainer then we use tune
-            pass
-            # TODO: (1) add evaluation, (2) print evaluation results, (3) add support for multi policy training
-
             trainer_class, trainer_config = self.trainer_to_config.popitem()
 
-            # ----------------------
-            # just for testing
-            ray.init(num_cpus=4, num_gpus=1)
-            trainer_ = trainer_class(trainer_config)
-            res = trainer_.train()
-            print(pretty_print(trainer_.config))
-            # ----------------------
-
-            # res = tune.run(
-            #     trainer_class,
-            #     name=self.experiment_name,  # This is used to specify the logging directory.
-            #     resources_per_trial=resources_per_trial,
-            #     # scheduler=scheduler,
-            #     stop=stop,
-            #     verbose=1,
-            #     config=trainer_config,
-            #     # checkpoint_freq=0,
-            #     checkpoint_at_end=True,
-            # )
+            res = tune.run(
+                trainer_class,
+                name=self.experiment_name,  # This is used to specify the logging directory.
+                # resources_per_trial=resources_per_trial,
+                # scheduler=scheduler,
+                stop=stop,
+                verbose=1,
+                config=trainer_config,
+                # checkpoint_freq=0,
+                checkpoint_at_end=True,
+                restore=restore
+            )
 
         stop = time.time()
         train_duration = time.strftime('%H:%M:%S', time.gmtime(stop-start))
         print('Training finished ({}), check the results in ~/ray_results/<dir>/'.format(train_duration))
         return res
-
-
-rlcard_env_id = 'leduc-holdem'
-trainer = RLTrainer(
-    experiment_name=rlcard_env_id,
-    rlcard_env_id=rlcard_env_id,
-    agent_to_policy={
-        'player_1': 'ppo_policy_1',
-        'player_2': 'ppo_policy_1',
-        # 'player_2': 'dqn_policy_1',
-    },
-    policy_to_class={
-        'ppo_policy_1': PPOTFPolicy,
-        'dqn_policy_1': DQNTFPolicy,
-        'random_policy': RandomPolicy
-    },
-    resources={
-        'num_workers': 4,
-        'num_gpus': 1,
-        # 'num_gpus_per_worker': 0.25,
-        # 'num_cpus_per_worker': 1,
-    }
-)
-num_gpus_per_worker: 0
-trainer.train(
-    stop={
-        'episodes_total': 500,
-        # "training_iteration": 10,
-        # "policy_reward_mean/ppo_policy_1": 29,
-        # "episode_reward_mean": 2.90,
-        # "timesteps_total": stop_timesteps,
-    },
-)
-
-# -------- Most interesting parameters for trainer setting --------
-# callbacks: <class 'ray.rllib.agents.callbacks.DefaultCallbacks'>
-# entropy_coeff: 0.0
-# env: leduc-holdem
-# env_config: {}
-# evaluation_config: {}
-# evaluation_num_episodes: 10
-# gamma: 0.99
-# lr: 5.0e-05
-# model:
-#   fcnet_activation: tanh
-#   fcnet_hiddens:
-#   - 256
-#   - 256
-#   use_lstm: false
-# num_gpus: 0
-# num_gpus_per_worker: 0
-# num_cpus_per_worker: 1,
-# num_workers: 2
