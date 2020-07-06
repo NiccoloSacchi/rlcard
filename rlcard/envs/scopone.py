@@ -11,7 +11,7 @@ class ScoponeEnv(Env):
         self.game = ScoponeGame()
         super().__init__(config)
         self.actions = list(range(self.game.get_action_num()))
-        # + 2 because of table and hand, plus captured cards per each player
+        # + 2 because of table and hand, plus captured cards and played cards per each player
         self.state_shape = [2 * self.game.get_player_num() + 2, self.game.get_action_num()]
 
     def _load_model(self):
