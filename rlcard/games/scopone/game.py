@@ -22,6 +22,9 @@ class ScoponeGame:
     def get_action_num(self):
         return 40
 
+    def get_player_id(self):
+        return self.current_player_id
+
     def init_game(self):
         self.current_player_id = self.player_starting
         self.first_player_this_game = self.current_player_id
