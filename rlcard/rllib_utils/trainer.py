@@ -1,9 +1,11 @@
+import ray
 from ray import tune
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
 from ray.rllib.agents.dqn.dqn_tf_policy import DQNTFPolicy
 from ray.rllib.models import ModelCatalog
+from ray.tune.logger import pretty_print
 from ray.tune.registry import register_env
 
 from rlcard.rllib_utils.random_policy import RandomPolicy
@@ -16,17 +18,23 @@ import time
 class RLTrainer:
     """
     Class used to train an rllib agent on an environment.
-
-    policy_to_class = {
-        'ppo_policy_1': PPOTFPolicy,
-        'dqn_policy_1': DQNTFPolicy,
-        'random_policy': RandomPolicy
-    }
-
-    agent_to_policy = {
-        'player_1': 'ppo_policy_1',
-        'player_2': 'dqn_policy_1',
-    }
+    Input:
+        rlcard_env_id (str): id of the rlcard environment o be trained.
+        agent_to_policy (dict): maps the agent name to the policy name to be used by that agent. Example;
+            agent_to_policy = {
+                'player_1': 'ppo_policy_1',
+                'player_2': 'dqn_policy_1',
+            }
+        policy_to_class (dict): Maps the policy name to the policy class. Example:
+            policy_to_class = {
+                'ppo_policy_1': PPOTFPolicy,
+                'dqn_policy_1': DQNTFPolicy,
+                'random_policy': RandomPolicy
+            }
+        randomize_agents_eval (list of str): during evaluation you might want to randomize the actions of some of the
+            agents in order to evaluate how well the other agents play vs random agents.
+        experiment_name (str): Name of the experiment. If None, rlcard_env_id is used as name.
+        resources (dict): resource to be used by rllib.
     """
 
     POLICY_TO_TRAINER = {
@@ -61,11 +69,12 @@ class RLTrainer:
         RandomPolicy: {}
     }
 
-    def __init__(self, rlcard_env_id, agent_to_policy, policy_to_class, experiment_name=None, resources={}):
+    def __init__(self, rlcard_env_id, agent_to_policy, policy_to_class, randomize_agents_eval=[], experiment_name=None, resources={}):
 
         self.rlcard_env_id = rlcard_env_id
         self.agent_to_policy = agent_to_policy
         self.policy_to_class = policy_to_class
+        self.randomize_agents_eval = randomize_agents_eval
         self.experiment_name = rlcard_env_id if experiment_name is None else experiment_name
 
         # --- Assert input parameters are valid ---
@@ -89,10 +98,12 @@ class RLTrainer:
             agent_to_policy=agent_to_policy,
             observation_space=env_tmp.observation_space,
             action_space=env_tmp.action_space,
-            resources=resources
+            randomize_agents_eval=randomize_agents_eval,
+            resources=resources,
         )  # {trainer class: trainer config}
 
-    def collect_trainers_config(self, policy_to_class, agent_to_policy, observation_space, action_space, resources):
+    def collect_trainers_config(
+            self, policy_to_class, agent_to_policy, observation_space, action_space, randomize_agents_eval, resources):
         # 1. Collect the policy configs to be used by the trainer(s)
         policies = {}  # {policy_name: (policy class, obs space, action space, policy config), ...}
         for policy_name, policy_class in policy_to_class.items():
@@ -122,6 +133,11 @@ class RLTrainer:
                     "policies_to_train": policies_to_train_,
                     "policies": policies,
                     "policy_mapping_fn": lambda agent_id: self.agent_to_policy[agent_id],
+                },
+                "evaluation_config": {
+                    "env_config": {
+                        "randomize_agents_eval": randomize_agents_eval,
+                    },
                 },
             }
             trainer_to_config[trainer_class].update(resources)
@@ -174,6 +190,13 @@ class RLTrainer:
         else:
             # If there is only one trainer then we use tune
             trainer_class, trainer_config = self.trainer_to_config.popitem()
+
+            # # --------
+            # ray.init(num_cpus=4, num_gpus=1)
+            # trainer_ = trainer_class(trainer_config)
+            # res = trainer_.train()
+            # # print(pretty_print(trainer_.config))
+            # # --------
 
             res = tune.run(
                 trainer_class,

@@ -8,6 +8,7 @@ class RandomPolicy(Policy):
         self.observation_space = observation_space
         self.action_space = action_space
         self.action_space.seed(0)
+        self.global_timestep = 0
 
     def compute_actions(
             self,
