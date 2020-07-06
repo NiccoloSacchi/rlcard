@@ -8,7 +8,7 @@ class ScoponeGame:
     def __init__(self):
         self.num_players = 4
         self.num_rounds = 10
-        self.current_round = None
+        self.completed_rounds = None
         self.current_player_id = None
         self.table = None
         self.players = None
@@ -22,11 +22,14 @@ class ScoponeGame:
     def get_action_num(self):
         return 40
 
+    def get_player_id(self):
+        return self.current_player_id
+
     def init_game(self):
         self.current_player_id = self.player_starting
         self.first_player_this_game = self.current_player_id
         self.player_starting = (self.player_starting + 1) % self.num_players
-        self.current_round = 0
+        self.completed_rounds = 0
         self.table = set()
         self.players = [ScoponePlayer(i) for i in range(self.num_players)]
         for player, cards in zip(self.players, self.deck.distribute_cards()):
@@ -40,7 +43,7 @@ class ScoponeGame:
         state = {}
         state["table"] = self.table
         state["current_player"] = player_id
-        state["current_round"] = self.current_round
+        state["completed_rounds"] = self.completed_rounds
         for idx in range(self.num_players):
             state[f"player_{idx}"] = self.players[idx].get_state()
         return state
@@ -50,7 +53,7 @@ class ScoponeGame:
         return [card.id for card in current_player_hand]
 
     def is_over(self):
-        last_round_is_over = (self.current_round == self.num_rounds)
+        last_round_is_over = (self.completed_rounds == self.num_rounds)
         last_player_has_played = (self.current_player_id == self.first_player_this_game)
         return last_round_is_over and last_player_has_played
 
@@ -74,7 +77,7 @@ class ScoponeGame:
         :return:
         :rtype:
         """
-        assert self.current_round < self.num_rounds
+        assert self.completed_rounds < self.num_rounds
 
         player = self.players[self.current_player_id]
         card = action
@@ -92,14 +95,14 @@ class ScoponeGame:
             for c in best_combination_on_the_table:
                 self.table.remove(c)
                 player.captured.add(c)
-                if not self.table:
+                if not self.table and not (self._is_last_round and self._is_round_over()):
                     player.scope += 1
         else:
             self.table.add(card)
         # print(f"Cards on the table after play: {[c.id  for c in self.table]}")
 
-        if self.current_player_id == (self.first_player_this_game + self.num_players - 1) % self.num_players:
-            self.current_round += 1
+        if self._is_round_over():
+            self.completed_rounds += 1
             # print(f"=========== Round {self.current_round} completed ============")
         self.current_player_id = (self.current_player_id + 1) % self.num_players
 
@@ -112,6 +115,12 @@ class ScoponeGame:
             assert all([len(p.played) == 10 for p in self.players])
             assert all([len(p.hand) == 0 for p in self.players])
         return self.get_state(), self.current_player_id
+
+    def _is_last_round(self):
+        return self.completed_rounds == self.num_rounds - 1
+
+    def _is_round_over(self):
+        return self.current_player_id == (self.first_player_this_game + self.num_players - 1) % self.num_players
 
     # TODO: make this more rigorous - e.g, then give priority to 6, 5, ...
     def _get_best_combination(self, played_card):
