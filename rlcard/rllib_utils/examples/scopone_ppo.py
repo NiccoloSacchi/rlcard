@@ -3,6 +3,7 @@ from ray.rllib.agents.ppo import PPOTrainer, PPOTFPolicy
 from ray.rllib.models import ModelCatalog
 from ray.tune import register_env
 
+from rlcard.rllib_utils.custom_metrics import PlayerScoreCallbacks
 from rlcard.rllib_utils.model import ParametricActionsModel
 from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
 
@@ -44,7 +45,8 @@ ppo_trainer_config = {
         "policies": policies,
         "policy_mapping_fn": lambda agent_id: "ppo_policy_albi" if agent_id in ("player_1", "player_3") else "ppo_policy_nico",
     },
-    "observation_filter": "NoFilter"
+    "observation_filter": "NoFilter",
+    "callbacks": PlayerScoreCallbacks
 }
 
 trainer = PPOTrainer(config=ppo_trainer_config)
