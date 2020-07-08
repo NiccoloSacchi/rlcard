@@ -7,7 +7,6 @@ class RandomPolicy(Policy):
 
     def __init__(self, observation_space, action_space, config):
         super().__init__(observation_space, action_space, config)
-        # self.preprocessor = get_preprocessor(observation_space)(observation_space)
         self.action_space.seed(0)
         self.global_timestep = 0
 

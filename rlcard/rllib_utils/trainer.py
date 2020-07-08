@@ -8,6 +8,7 @@ from ray.rllib.models import ModelCatalog
 from ray.tune.logger import pretty_print
 from ray.tune.registry import register_env
 
+from rlcard.rllib_utils.custom_metrics import PlayerScoreCallbacks
 from rlcard.rllib_utils.random_policy import RandomPolicy
 from rlcard.rllib_utils.model import ParametricActionsModel
 from rlcard.rllib_utils.rlcard_wrapper import RLCardWrapper
@@ -87,12 +88,12 @@ class RLTrainer:
 
         # --- Register env and model to be used by rllib ---
         # TODO: how to create a RLcard env with multiple agents? Seems by default is with 2
-        RLCardWrapped = lambda _: RLCardWrapper(rlcard_env_id=rlcard_env_id)
+        RLCardWrapped = lambda env_config: RLCardWrapper(env_config)
         register_env(rlcard_env_id, RLCardWrapped)
         ModelCatalog.register_custom_model("parametric_model_tf", ParametricActionsModel)
 
         # --- Extract the configuration for the trainer(s) ---
-        env_tmp = RLCardWrapped(None)
+        env_tmp = RLCardWrapped({'rlcard_env_id': self.rlcard_env_id})
         self.trainer_to_config = self.collect_trainers_config(
             policy_to_class=policy_to_class,
             agent_to_policy=agent_to_policy,
@@ -129,16 +130,29 @@ class RLTrainer:
         for trainer_class, policies_to_train_ in policies_to_train.items():
             trainer_to_config[trainer_class] = {
                 "env": self.rlcard_env_id,
+                "env_config": {
+                    'rlcard_env_id': self.rlcard_env_id,
+                },
+
                 "multiagent": {
                     "policies_to_train": policies_to_train_,
                     "policies": policies,
                     "policy_mapping_fn": lambda agent_id: self.agent_to_policy[agent_id],
                 },
+
+                "evaluation_num_workers": 0,
+                # Enable evaluation, once per training iteration.
+                "evaluation_interval": 1,
+                # Run 10 episodes each time evaluation runs.
+                "evaluation_num_episodes": 500,
+                # Override the env config for evaluation.
                 "evaluation_config": {
                     "env_config": {
+                        'rlcard_env_id': self.rlcard_env_id,
                         "randomize_agents_eval": randomize_agents_eval,
                     },
                 },
+                "callbacks": PlayerScoreCallbacks
             }
             trainer_to_config[trainer_class].update(resources)
         return trainer_to_config
@@ -194,7 +208,8 @@ class RLTrainer:
             # # --------
             # ray.init(num_cpus=4, num_gpus=1)
             # trainer_ = trainer_class(trainer_config)
-            # res = trainer_.train()
+            # for i in range(10):
+            #     res = trainer_.train()
             # # print(pretty_print(trainer_.config))
             # # --------
 
@@ -206,7 +221,7 @@ class RLTrainer:
                 stop=stop,
                 verbose=1,
                 config=trainer_config,
-                # checkpoint_freq=0,
+                checkpoint_freq=100,
                 checkpoint_at_end=True,
                 restore=restore
             )

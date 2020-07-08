@@ -2,6 +2,7 @@ import rlcard
 from gym.spaces import Dict, Discrete, Tuple, Box
 from ray.rllib.env.multi_agent_env import MultiAgentEnv
 import numpy as np
+import random
 
 
 class RLCardWrapper(MultiAgentEnv):
@@ -13,9 +14,9 @@ class RLCardWrapper(MultiAgentEnv):
 
     Of the rlcard environment you have to pass the name, the low and high values of the observation space
     """
-    def __init__(self, rlcard_env_id, config={}):
+    def __init__(self, env_config={}):
         # create the rlcard environment
-        self.rlcard_env = rlcard.make(rlcard_env_id)
+        self.rlcard_env = rlcard.make(env_config['rlcard_env_id'])
 
         # state and action spaces
         self.action_space = Discrete(self.rlcard_env.action_num)  # number of actions in this game
@@ -25,6 +26,11 @@ class RLCardWrapper(MultiAgentEnv):
             # we have to handle changing action spaces
             "action_mask": Box(0, 1, shape=(self.rlcard_env.action_num,)),
         })
+
+        # these players will have to be randomized for evaluation purposes
+        self.randomize_agents_eval = []
+        if "randomize_agents_eval" in env_config:
+            self.randomize_agents_eval = env_config["randomize_agents_eval"]
 
         # instantiate the player names
         self.players = ["player_{}".format(i+1) for i in range(self.rlcard_env.player_num)]
@@ -52,9 +58,15 @@ class RLCardWrapper(MultiAgentEnv):
 
     def step(self, action_dict):
         # There is always only one player playing per turn: take and execute the action of the current player
-
         assert len(action_dict) == 1
-        action = next(iter(action_dict.values()))
+        player, action = action_dict.popitem()
+        if player in self.randomize_agents_eval:
+            # randomize for evaluation purposes
+            action = random.sample(self.rlcard_env._get_legal_actions(), 1)[0]
+            if isinstance(action, str):
+                # convert to integer
+                assert hasattr(self.rlcard_env, 'actions'), 'The environment is returning string actions and does not have the list of possible actions...'
+                action = self.rlcard_env.actions.index(action)
         next_state, next_player_id = self.rlcard_env.step(action, raw_action=False)
 
         # Get the state for the next player, reward is defaulted to 0 until the end of the game
