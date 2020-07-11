@@ -1,3 +1,4 @@
+from ray.rllib.agents.a3c.a3c_tf_policy import A3CTFPolicy
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
 from ray.rllib.agents.dqn.dqn_tf_policy import DQNTFPolicy
 from rlcard.rllib_utils.random_policy import RandomPolicy
@@ -7,40 +8,44 @@ from rlcard.rllib_utils.trainer import RLTrainer
 # rlcard_env_id = 'doudizhu'
 # rlcard_env_id = 'gin-rummy'
 # rlcard_env_id = 'leduc-holdem'
-rlcard_env_id = 'limit-holdem'
+# rlcard_env_id = 'limit-holdem'
 # rlcard_env_id = 'mahjong'
 # rlcard_env_id = 'no-limit-holdem'
 # rlcard_env_id = 'simple-doudizhu'
 # rlcard_env_id = 'uno'
 # rlcard_env_id = 'scopone'
 
+# import ray
+# ray.init(num_cpus=4, num_gpus=1)
+
 for rlcard_env_id in [
-    'blackjack',
-    'doudizhu',
+    # 'blackjack',
+    # 'doudizhu',
     # 'gin-rummy',
-    'leduc-holdem',
-    'limit-holdem',
-    'mahjong',
-    'no-limit-holdem',
+    # 'leduc-holdem',
+    # 'limit-holdem',
+    # 'mahjong',
+    # 'no-limit-holdem',
     # 'simple-doudizhu',
     'uno',
-    'scopone',
+    # 'scopone',
 ]:
     try:
         trainer = RLTrainer(
             experiment_name=rlcard_env_id,
             rlcard_env_id=rlcard_env_id,
             agent_to_policy={
-                'player_1': 'ppo_policy_1',
-                'player_2': 'ppo_policy_1',
-                'player_3': 'ppo_policy_1',
-                'player_4': 'ppo_policy_1',
+                'player_1': 'a2c_policy',
+                'player_2': 'a2c_policy',
+                'player_3': 'a2c_policy',
+                'player_4': 'a2c_policy',
                 # random_policy
                 # 'player_2': 'dqn_policy_1',
             },
             policy_to_class={
                 'ppo_policy_1': PPOTFPolicy,
                 'dqn_policy_1': DQNTFPolicy,
+                'a2c_policy': A3CTFPolicy,
                 'random_policy': RandomPolicy
             },
             randomize_agents_eval=['player_2', 'player_4'],
