@@ -149,9 +149,12 @@ class RLTrainer:
                     "policy_mapping_fn": lambda agent_id: self.agent_to_policy[agent_id],
                 },
 
+                "timesteps_per_iteration": 20000,
+                # "min_iter_time_s": 30,
+
                 "evaluation_num_workers": 0,
                 # Enable evaluation, once per training iteration.
-                "evaluation_interval": int(2000/7),
+                "evaluation_interval": 1,
                 # Run 10 episodes each time evaluation runs.
                 "evaluation_num_episodes": 500,
                 # Override the env config for evaluation.

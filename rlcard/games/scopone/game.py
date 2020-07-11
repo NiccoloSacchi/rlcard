@@ -50,7 +50,7 @@ class ScoponeGame:
 
     def get_legal_actions(self):
         current_player_hand = self.players[self.current_player_id].hand
-        return [card.id for card in current_player_hand]
+        return [card.index for card in current_player_hand]
 
     def is_over(self):
         last_round_is_over = (self.completed_rounds == self.num_rounds)

@@ -27,8 +27,8 @@ for rlcard_env_id in [
     # 'mahjong',
     # 'no-limit-holdem',
     # 'simple-doudizhu',
-    'uno',
-    # 'scopone',
+    # 'uno',
+    'scopone',
 ]:
     try:
         trainer = RLTrainer(
@@ -50,7 +50,7 @@ for rlcard_env_id in [
             },
             randomize_agents_eval=['player_2', 'player_4'],
             resources={
-                'num_workers': 8,
+                'num_workers': 6,
                 # 'num_gpus': 1,
                 # 'num_gpus_per_worker': 0.25,
                 # 'num_cpus_per_worker': 1,
