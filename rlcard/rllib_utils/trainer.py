@@ -1,5 +1,7 @@
 import ray
 from ray import tune
+from ray.rllib.agents.a3c import A2CTrainer
+from ray.rllib.agents.a3c.a3c_tf_policy import A3CTFPolicy
 from ray.rllib.agents.ppo import PPOTrainer
 from ray.rllib.agents.dqn import DQNTrainer
 from ray.rllib.agents.ppo.ppo_tf_policy import PPOTFPolicy
@@ -41,6 +43,7 @@ class RLTrainer:
     POLICY_TO_TRAINER = {
         PPOTFPolicy: PPOTrainer,
         DQNTFPolicy: DQNTrainer,
+        A3CTFPolicy: A2CTrainer,
         RandomPolicy: None
     }
 
@@ -66,6 +69,12 @@ class RLTrainer:
             # defined a a custom DistributionalQModel that is aware of masking.
             'hiddens': [],
             "dueling": False,
+        },
+        A3CTFPolicy: {
+            "model": {
+                "custom_model": "parametric_model_tf",
+                # 'fcnet_hiddens': [256, 256, 256]
+            },
         },
         RandomPolicy: {}
     }
@@ -140,6 +149,9 @@ class RLTrainer:
                     "policy_mapping_fn": lambda agent_id: self.agent_to_policy[agent_id],
                 },
 
+                "timesteps_per_iteration": 20000,
+                # "min_iter_time_s": 30,
+
                 "evaluation_num_workers": 0,
                 # Enable evaluation, once per training iteration.
                 "evaluation_interval": 1,
@@ -210,7 +222,7 @@ class RLTrainer:
             # trainer_ = trainer_class(trainer_config)
             # for i in range(10):
             #     res = trainer_.train()
-            # # print(pretty_print(trainer_.config))
+            # print(pretty_print(trainer_.config))
             # # --------
 
             res = tune.run(
