@@ -41,9 +41,9 @@ def create_arena_trainer(env_id, first_policy, second_policy, policy_to_class):
 
 if __name__ == "__main__":
 
-    num_iter = 1000
+    num_iter = 10
 
-    env_id = "limit-holdem"
+    env_id = "scopone"
 
     policy_0 = "a2c_policy"
     policy_to_class_0 = {
@@ -59,11 +59,11 @@ if __name__ == "__main__":
         'player_4': policy_0,
     }
 
-    checkpoint_0 = r"C:\Users\chiappal\ray_results\limit-holdem\A2C_limit-holdem_0_2020-07-11_10-20-24ewvwlolq\checkpoint_400\checkpoint-400"
+    checkpoint_0 = r"C:\Users\chiappal\ray_results\A2C_scopone_0_2020-07-11_19-46-11opyirc0d\checkpoint_393\checkpoint-393"
 
     policy_1 = "dqn_policy_1"
     policy_to_class_1 = {
-        'ppo_policy_1': PPOTFPolicy,
+        # 'ppo_policy_1': PPOTFPolicy,
         'dqn_policy_1': DQNTFPolicy,
         'random_policy': RandomPolicy
     }
@@ -74,7 +74,7 @@ if __name__ == "__main__":
         'player_4': policy_1,
     }
 
-    checkpoint_1 = r"C:\Users\chiappal\ray_results\limit-holdem\DQN_limit-holdem_0_2020-07-11_17-33-563qv8j_bf\checkpoint_516\checkpoint-516"
+    checkpoint_1 = r"C:\Users\chiappal\ray_results\DQN_random_scopone_0_2020-07-12_12-03-474ji9b08c\checkpoint_158\checkpoint-158"
 
     # Initialize ray
     ray.init(num_cpus=4, num_gpus=0)
